@@ -16,7 +16,7 @@ bin
 obj
 Debug
 Release
-
+.vs/
 # mstest test results
 TestResults
 .psess
