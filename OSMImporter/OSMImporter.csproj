@@ -108,28 +108,8 @@
     <None Include="Hebesätze der Gemeinden\Hebesätze der Gemeinden_2013.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="jod-official-pubring.gpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="jod-official-secring.gpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="jod-test-pubring.gpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="jod-test-secring.gpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\libs\bouncycastle\crypto\crypto.csproj">
-      <Project>{38872a5f-e87e-4fad-b109-8eb7b2e6a4a0}</Project>
-      <Name>crypto</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\libs\Hermod\Hermod\Hermod.csproj">
-      <Project>{477efd16-3627-4473-957d-44ca9a9dfb79}</Project>
-      <Name>Hermod</Name>
-    </ProjectReference>
     <ProjectReference Include="..\libs\Illias\Illias.NET4.5\Illias.NET4.5.csproj">
       <Project>{23d37453-2d4e-4bd8-b40f-3e731fee7712}</Project>
       <Name>Illias.NET4.5</Name>
@@ -138,26 +118,10 @@
       <Project>{e156f18d-d41c-4529-9bcc-9962e6ee25da}</Project>
       <Name>Illias</Name>
     </ProjectReference>
-    <ProjectReference Include="..\libs\Styx\Styx.NET4.5\Styx.NET4.5.csproj">
-      <Project>{af76ecc0-2ca5-4cff-9e1e-ff5478c4b6e4}</Project>
-      <Name>Styx.NET4.5</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\libs\Styx\Styx\Styx.csproj">
-      <Project>{3949790d-8591-4101-9e4d-ce7a758e7409}</Project>
-      <Name>Styx</Name>
-    </ProjectReference>
     <ProjectReference Include="..\OverpassAPI\OverpassAPI.csproj">
       <Project>{0669c189-2cdb-43a9-8f8e-7a5e6ebe1fee}</Project>
       <Name>OverpassAPI</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="jod-official-passphrase.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="jod-test-passphrase.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
