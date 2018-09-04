@@ -330,3 +330,4 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+.vs/OSMImporter/v15/Server/sqlite3/storage.ide-shm
