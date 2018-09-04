@@ -95,7 +95,8 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 				.WithWays("natural", "water")
 				.WithRelations("landuse", "reservoir")
 				.WithRelations("natural", "water")
-			   .RunAll("output/full");
+				.ToGeoJSONFile("output/full.geojson")
+			   .RunNow();
 
 
 
