@@ -47,6 +47,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BoundingBox.cs" />
+    <Compile Include="Extensions\DateTimeExtensions.cs" />
+    <Compile Include="Extensions\IEnumerableExtensions.cs" />
+    <Compile Include="Extensions\IListExtensions.cs" />
     <Compile Include="GeoJSON\GeoFeature.cs" />
     <Compile Include="GeoJSON\GeoCoord.cs" />
     <Compile Include="Relation.cs" />
@@ -58,16 +61,6 @@
     <Compile Include="ToFile.cs" />
     <Compile Include="OverpassResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libs\Illias\Illias.NET4.5\Illias.NET4.5.csproj">
-      <Project>{23d37453-2d4e-4bd8-b40f-3e731fee7712}</Project>
-      <Name>Illias.NET4.5</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\libs\Illias\Illias\Illias.csproj">
-      <Project>{e156f18d-d41c-4529-9bcc-9962e6ee25da}</Project>
-      <Name>Illias</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
