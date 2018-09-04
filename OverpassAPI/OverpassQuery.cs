@@ -304,12 +304,14 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 											   Where(JSONObject => JSONObject["osm_type"].ToString() == "relation").
 											   FirstOrDefault();
 
-								// result ==      62693 (Jena)
-								// wanted == 3600062693
-								//           3600000000
+								// https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#
+								//
+								//By convention the area id can be calculated from an existing OSM way 
+								// by adding 2400000000 to its OSM id, 
+								// or in case of a relation by adding 3600000000 respectively
 
 								if (JSON != null)
-									this._AreaId = UInt64.Parse(JSON["osm_id"].ToString());// + 3600000000;
+									this._AreaId = UInt64.Parse(JSON["osm_id"].ToString()) + 3600000000;
 
 								return this;
 
@@ -682,7 +684,8 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 			QueryString.AppendLine(">;");
 			QueryString.AppendLine("out skel qt;");
 
-			return QueryString.ToString();
+			var result = QueryString.ToString();
+			return result;
 
 		}
 

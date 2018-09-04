@@ -72,21 +72,39 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
 
 			Directory.CreateDirectory("output");
+
+			var areaId = new OverpassQuery("Alpes de Haute Provence").AreaId;
+
+			new OverpassQuery(areaId)
+			   .WithNodes("natural", "peak")
+				.ToGeoJSONFile("output/peaksArea.geojson")
+				.RunNow();
+
+			new OverpassQuery(areaId)
+			.WithNodes("natural", "peak")
+				.WithNodes("natural", "saddle")
+				.WithWays("waterway", "river")
+				.WithWays("natural", "water")
+				.WithRelations("landuse", "reservoir")
+				.WithRelations("natural", "water")
+				.ToGeoJSONFile("output/fullArea.geojson")
+			   .RunNow();
+
 			BoundingBox bboxLauzannier = new BoundingBox(44.34815879690078, 6.780796051025391, 44.45878010882453, 6.961898803710937);
-			 new OverpassQuery(bboxLauzannier).WithNodes("natural", "peak")
-				.RunAll("output/natural.peak");
+			// new OverpassQuery(bboxLauzannier).WithNodes("natural", "peak")
+			//	.RunAll("output/natural.peak");
 
-			new OverpassQuery(bboxLauzannier).WithNodes("natural", "saddle")
-			   .RunAll("output/natural.saddle");
+			//new OverpassQuery(bboxLauzannier).WithNodes("natural", "saddle")
+			//   .RunAll("output/natural.saddle");
 
-			new OverpassQuery(bboxLauzannier).WithWays("waterway", "river")
-			   .RunAll("output/waterway.river");
+			//new OverpassQuery(bboxLauzannier).WithWays("waterway", "river")
+			//   .RunAll("output/waterway.river");
 
-			new OverpassQuery(bboxLauzannier).WithWays("natural", "water")
-			   .RunAll("output/natural.water");
+			//new OverpassQuery(bboxLauzannier).WithWays("natural", "water")
+			//   .RunAll("output/natural.water");
 
-			new OverpassQuery(bboxLauzannier).WithRelations("landuse", "reservoir")
-			   .RunAll("output/landuse.reservoir");
+			//new OverpassQuery(bboxLauzannier).WithRelations("landuse", "reservoir")
+			//   .RunAll("output/landuse.reservoir");
 
 			new OverpassQuery(bboxLauzannier)
 				.WithNodes("natural", "peak")
@@ -95,8 +113,9 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 				.WithWays("natural", "water")
 				.WithRelations("landuse", "reservoir")
 				.WithRelations("natural", "water")
-				.ToGeoJSONFile("output/full.geojson")
+				.ToGeoJSONFile("output/fullBbox.geojson")
 			   .RunNow();
+
 
 
 
