@@ -502,7 +502,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
                 CurrentGeoFeature = RemainingGeoFeatures.RemoveAndReturnFirst();
 
                 // The current geo feature is closed -> a polygon!
-                if (Relation.Tags["type"].ToString()         != "route" &&
+                if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString()         != "route") &&
                     CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
                 {
                     CurrentGeoFeature.Type = GeoFeature.GeoType.Polygon;

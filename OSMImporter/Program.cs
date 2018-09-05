@@ -41,7 +41,7 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 		/// <param name="OverpassQuery">An Overpass query.</param>
 		/// <param name="FilenamePrefix">A file name prefix.</param>
 		public static void RunAll(this OverpassQuery OverpassQuery,
-								  String FilenamePrefix)
+									String FilenamePrefix)
 		{
 
 			OverpassQuery.
@@ -70,25 +70,161 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 		public static void Main(String[] Arguments)
 		{
 
-
+			int msDelay = 2000;
 			Directory.CreateDirectory("output");
 
-			var areaId = new OverpassQuery("Alpes de Haute Provence").AreaId;
+			#region French "départements"
+			Dictionary<string, string> v_frenchDepartements = new Dictionary<string, string>();
+			v_frenchDepartements.Add("01", "Ain");
+			v_frenchDepartements.Add("02", "Aisne");
+			v_frenchDepartements.Add("03", "Allier");
+			v_frenchDepartements.Add("04", "Alpes de Haute-Provence");
+			v_frenchDepartements.Add("05", "Hautes-Alpes");
+			v_frenchDepartements.Add("06", "Alpes-Maritimes");
+			v_frenchDepartements.Add("07", "Ardèche");
+			v_frenchDepartements.Add("08", "Ardennes");
+			v_frenchDepartements.Add("09", "Ariège");
+			v_frenchDepartements.Add("10", "Aube");
+			v_frenchDepartements.Add("11", "Aude");
+			v_frenchDepartements.Add("12", "Aveyron");
+			v_frenchDepartements.Add("13", "Bouches du Rhône");
+			v_frenchDepartements.Add("14", "Calvados");
+			v_frenchDepartements.Add("15", "Cantal");
+			v_frenchDepartements.Add("16", "Charente");
+			v_frenchDepartements.Add("17", "Charente Maritime");
+			v_frenchDepartements.Add("18", "Cher");
+			v_frenchDepartements.Add("19", "Corrèze");
+			v_frenchDepartements.Add("21", "Côte d'Or");
+			v_frenchDepartements.Add("22", "Côtes d'Armor");
+			v_frenchDepartements.Add("23", "Creuse");
+			v_frenchDepartements.Add("24", "Dordogne");
+			v_frenchDepartements.Add("25", "Doubs");
+			v_frenchDepartements.Add("26", "Drôme");
+			v_frenchDepartements.Add("27", "Eure");
+			v_frenchDepartements.Add("28", "Eure-et-Loir");
+			v_frenchDepartements.Add("29", "Finistère");
+			v_frenchDepartements.Add("30", "Gard");
+			v_frenchDepartements.Add("31", "Haute-Garonne");
+			v_frenchDepartements.Add("32", "Gers");
+			v_frenchDepartements.Add("33", "Gironde");
+			v_frenchDepartements.Add("34", "Hérault");
+			v_frenchDepartements.Add("35", "Ille-et-Vilaine");
+			v_frenchDepartements.Add("36", "Indre");
+			v_frenchDepartements.Add("37", "Indre-et-Loire");
+			v_frenchDepartements.Add("38", "Isère");
+			v_frenchDepartements.Add("39", "Jura");
+			v_frenchDepartements.Add("40", "Landes");
+			v_frenchDepartements.Add("41", "Loir-et-Cher");
+			v_frenchDepartements.Add("42", "Loire");
+			v_frenchDepartements.Add("43", "Haute-Loire");
+			v_frenchDepartements.Add("44", "Loire-Atlantique");
+			v_frenchDepartements.Add("45", "Loiret");
+			v_frenchDepartements.Add("46", "Lot");
+			v_frenchDepartements.Add("47", "Lot-et-Garonne");
+			v_frenchDepartements.Add("48", "Lozère");
+			v_frenchDepartements.Add("49", "Maine-et-Loire");
+			v_frenchDepartements.Add("50", "Manche");
+			v_frenchDepartements.Add("51", "Marne");
+			v_frenchDepartements.Add("52", "Haute-Marne");
+			v_frenchDepartements.Add("53", "Mayenne");
+			v_frenchDepartements.Add("54", "Meurthe-et-Moselle");
+			v_frenchDepartements.Add("55", "Meuse");
+			v_frenchDepartements.Add("56", "Morbihan");
+			v_frenchDepartements.Add("57", "Moselle");
+			v_frenchDepartements.Add("58", "Nièvre");
+			v_frenchDepartements.Add("59", "Nord");
+			v_frenchDepartements.Add("60", "Oise");
+			v_frenchDepartements.Add("61", "Orne");
+			v_frenchDepartements.Add("62", "Pas-de-Calais");
+			v_frenchDepartements.Add("63", "Puy-de-Dôme");
+			v_frenchDepartements.Add("64", "Pyrénées-Atlantiques");
+			v_frenchDepartements.Add("65", "Hautes-Pyrénées");
+			v_frenchDepartements.Add("66", "Pyrénées-Orientales");
+			v_frenchDepartements.Add("67", "Bas-Rhin");
+			v_frenchDepartements.Add("68", "Haut-Rhin");
+			v_frenchDepartements.Add("69", "Rhône");
+			v_frenchDepartements.Add("70", "Haute-Saône");
+			v_frenchDepartements.Add("71", "Saône-et-Loire");
+			v_frenchDepartements.Add("72", "Sarthe");
+			v_frenchDepartements.Add("73", "Savoie");
+			v_frenchDepartements.Add("74", "Haute-Savoie");
+			v_frenchDepartements.Add("75", "Paris");
+			v_frenchDepartements.Add("76", "Seine-Maritime");
+			v_frenchDepartements.Add("77", "Seine-et-Marne");
+			v_frenchDepartements.Add("78", "Yvelines");
+			v_frenchDepartements.Add("79", "Deux-Sèvres");
+			v_frenchDepartements.Add("80", "Somme");
+			v_frenchDepartements.Add("81", "Tarn");
+			v_frenchDepartements.Add("82", "Tarn-et-Garonne");
+			v_frenchDepartements.Add("83", "Var");
+			v_frenchDepartements.Add("84", "Vaucluse");
+			v_frenchDepartements.Add("85", "Vendée");
+			v_frenchDepartements.Add("86", "Vienne");
+			v_frenchDepartements.Add("87", "Haute-Vienne");
+			v_frenchDepartements.Add("88", "Vosges");
+			v_frenchDepartements.Add("89", "Yonne");
+			v_frenchDepartements.Add("90", "Territoire-de-Belfort");
+			v_frenchDepartements.Add("91", "Essonne");
+			v_frenchDepartements.Add("92", "Hauts-de-Seine");
+			v_frenchDepartements.Add("93", "Seine-St-Denis");
+			v_frenchDepartements.Add("94", "Val-de-Marne");
+			v_frenchDepartements.Add("95", "Val-d'Oise");
+			v_frenchDepartements.Add("2A", "Corse du Sud");
+			v_frenchDepartements.Add("2B", "Haute-Corse");
+			#endregion
 
-			new OverpassQuery(areaId)
-			   .WithNodes("natural", "peak")
-				.ToGeoJSONFile("output/peaksArea.geojson")
-				.RunNow();
 
-			new OverpassQuery(areaId)
-			.WithNodes("natural", "peak")
-				.WithNodes("natural", "saddle")
-				.WithWays("waterway", "river")
-				.WithWays("natural", "water")
-				.WithRelations("landuse", "reservoir")
-				.WithRelations("natural", "water")
-				.ToGeoJSONFile("output/fullArea.geojson")
-			   .RunNow();
+			foreach (var dep in v_frenchDepartements)
+			{
+				var areaId = new OverpassQuery(dep.Value).AreaId;
+
+				string dirname = string.Concat("output/", dep.Key);
+
+				Directory.CreateDirectory(dirname);
+
+				new OverpassQuery(areaId)
+	 .WithNodes("place", "city")
+	 .WithNodes("place", "town")
+	 .WithNodes("place", "village")
+		.ToGeoJSONFile(dirname + "/cities.geojson")
+		.RunNow();
+
+				Delay(msDelay);
+
+
+				//new OverpassQuery(areaId)
+				//	 .WithNodes("natural", "peak")
+				//		.ToGeoJSONFile(dirname + "/peak.geojson")
+				//		.RunNow();
+
+				//Delay(msDelay);
+
+				//new OverpassQuery(areaId)
+				//	 .WithNodes("natural", "saddle")
+				//		.ToGeoJSONFile(dirname + "/saddle.geojson")
+				//		.RunNow();
+
+				//Delay(msDelay);
+
+				//new OverpassQuery(areaId)
+				// .WithWays("waterway", "river")
+				//	.WithWays("natural", "water")
+				//	.ToGeoJSONFile(dirname + "/rivers.geojson")
+				//	.RunNow();
+
+				//Delay(msDelay);
+
+				//new OverpassQuery(areaId)
+				//	.WithRelations("landuse", "reservoir")
+				//	.WithRelations("natural", "water")
+				//	.ToGeoJSONFile(dirname + "/lakes.geojson")
+				//	.RunNow();
+
+				//Delay(msDelay);
+
+				Console.WriteLine($"{dep.Key} {dep.Value} done");
+			}
+
 
 			BoundingBox bboxLauzannier = new BoundingBox(44.34815879690078, 6.780796051025391, 44.45878010882453, 6.961898803710937);
 			// new OverpassQuery(bboxLauzannier).WithNodes("natural", "peak")
@@ -114,7 +250,7 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 				.WithRelations("landuse", "reservoir")
 				.WithRelations("natural", "water")
 				.ToGeoJSONFile("output/fullBbox.geojson")
-			   .RunNow();
+				 .RunNow();
 
 
 
@@ -126,6 +262,12 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
 		}
 
+		private static void Delay(int msDelay)
+		{
+			Console.Write($"Waiting {msDelay} ms...");
+			Task.Delay(msDelay).Wait();
+			Console.Write("OK!");
+		}
 	}
 
 }

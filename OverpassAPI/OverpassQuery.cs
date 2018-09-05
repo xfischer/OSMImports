@@ -64,7 +64,9 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 		/// <summary>
 		/// The URI of the OverpassAPI.
 		/// </summary>
-		public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
+		//public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
+		public static readonly Uri OverpassAPI_URI = new Uri("http://overpass.openstreetmap.fr/api/interpreter");
+		
 
 		/// <summary>
 		/// The URI of the NominatimAPI.
