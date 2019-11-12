@@ -33,666 +33,723 @@ using System.Threading;
 namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 {
 
-	/// <summary>
-	/// A query against an Overpass API.
-	/// </summary>
-	public class OverpassQuery
-	{
-
-		#region Documentation
-
-		// http://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL
-
-		// A Overpass query example...
-		// 
-		// [out:json]
-		// [timeout:100];
-		// area($areaId)->.searchArea;
-		// (
-		//   node     ["leisure"]            (area.searchArea);
-		//   way      ["waterway" = "river"] (area.searchArea);
-		//   relation ["leisure"]            (area.searchArea);
-		// );
-		// out body;
-		// >;
-		// out skel qt;
-
-		#endregion
-
-		#region Data
-
-		/// <summary>
-		/// The URI of the OverpassAPI.
-		/// </summary>
-		//public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
-		public static readonly Uri OverpassAPI_URI = new Uri("http://overpass.openstreetmap.fr/api/interpreter");
-		
-
-		/// <summary>
-		/// The URI of the NominatimAPI.
-		/// </summary>
-		public static readonly Uri NominatimAPI_URI = new Uri("http://nominatim.openstreetmap.org/search");
-
-
-		private QueryContext CurrentContext;
-
-		private List<List<KeyValuePair<String, String>>> Nodes;
-		private List<List<KeyValuePair<String, String>>> Ways;
-		private List<List<KeyValuePair<String, String>>> Relations;
-
-		#endregion
-
-		#region Properties
-
-		#region AreaId
+    /// <summary>
+    /// A query against an Overpass API.
+    /// </summary>
+    public class OverpassQuery
+    {
+
+        #region Documentation
+
+        // http://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL
+
+        // A Overpass query example...
+        // 
+        // [out:json]
+        // [timeout:100];
+        // area($areaId)->.searchArea;
+        // (
+        //   node     ["leisure"]            (area.searchArea);
+        //   way      ["waterway" = "river"] (area.searchArea);
+        //   relation ["leisure"]            (area.searchArea);
+        // );
+        // out body;
+        // >;
+        // out skel qt;
+
+        #endregion
+
+        #region Data
+
+        /// <summary>
+        /// The URI of the OverpassAPI.
+        /// </summary>
+        //public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
+        public static readonly Uri OverpassAPI_URI = new Uri("http://overpass.openstreetmap.fr/api/interpreter");
+
+
+        /// <summary>
+        /// The URI of the NominatimAPI.
+        /// </summary>
+        public static readonly Uri NominatimAPI_URI = new Uri("http://nominatim.openstreetmap.org/search");
+
+
+        private QueryContext CurrentContext;
+
+        private List<List<KeyValuePair<String, String>>> Nodes;
+        private List<List<KeyValuePair<String, String>>> Ways;
+        private List<List<KeyValuePair<String, String>>> Relations;
+        private List<String> NodesRelations;
+
+        #endregion
+
+        #region Properties
+
+        #region AreaId
+
+        private UInt64 _AreaId;
+        private BoundingBox _BBox;
+        private string _Filter;
+
+        /// <summary>
+        /// The area identification used for this query.
+        /// </summary>
+        public UInt64 AreaId
+        {
+            get
+            {
+                return _AreaId;
+            }
+        }
 
-		private UInt64 _AreaId;
-		private BoundingBox _BBox;
-
-		/// <summary>
-		/// The area identification used for this query.
-		/// </summary>
-		public UInt64 AreaId
-		{
-			get
-			{
-				return _AreaId;
-			}
-		}
 
+        /// <summary>
+        /// The bounding box filter used for this query
+        /// </summary>
+        public BoundingBox BoundingBox
+        {
+            get
+            {
+                return _BBox;
+            }
+        }
 
-		/// <summary>
-		/// The bounding box filter used for this query
-		/// </summary>
-		public BoundingBox BoundingBox
-		{
-			get
-			{
-				return _BBox;
-			}
-		}
+        #endregion
 
-		#endregion
+        #region QueryTimeout
 
-		#region QueryTimeout
-
-		private UInt32 _QueryTimeout = 100;
-
-		/// <summary>
-		/// The timeout of the query.
-		/// </summary>
-		public UInt32 QueryTimeout
-		{
-			get
-			{
-				return _QueryTimeout;
-			}
-		}
-
-		#endregion
-
-		#endregion
+        private UInt32 _QueryTimeout = 100;
 
-		#region (private, enum) QueryContext
+        /// <summary>
+        /// The timeout of the query.
+        /// </summary>
+        public UInt32 QueryTimeout
+        {
+            get
+            {
+                return _QueryTimeout;
+            }
+        }
+
+        #endregion
 
-		/// <summary>
-		/// The current query state which allows to narrow down a query using AND.
-		/// </summary>
-		private enum QueryContext
-		{
-
-			/// <summary>
-			/// Illegal state.
-			/// </summary>
-			none,
+        #endregion
 
-			/// <summary>
-			/// Query nodes.
-			/// </summary>
-			Nodes,
-
-			/// <summary>
-			/// Query ways.
-			/// </summary>
-			Ways,
-
-			/// <summary>
-			/// Query relations.
-			/// </summary>
-			Relations,
+        #region (private, enum) QueryContext
 
-			/// <summary>
-			/// Query nodes, ways and relations.
-			/// </summary>
-			Any
-
-		}
-
-		#endregion
+        /// <summary>
+        /// The current query state which allows to narrow down a query using AND.
+        /// </summary>
+        private enum QueryContext
+        {
 
-		#region Constructor(s)
-
-		#region OverpassQuery()
+            /// <summary>
+            /// Illegal state.
+            /// </summary>
+            none,
 
-		/// <summary>
-		/// Create a new OverpassQuery.
-		/// </summary>
-		public OverpassQuery()
-		{
-
-			_AreaId = 0;
-			_BBox = null;
-
-			CurrentContext = QueryContext.none;
-
-			Nodes = new List<List<KeyValuePair<String, String>>>();
-			Ways = new List<List<KeyValuePair<String, String>>>();
-			Relations = new List<List<KeyValuePair<String, String>>>();
-
-		}
-
-		#endregion
-
-		#region OverpassQuery(AreaId)
-
-		/// <summary>
-		/// Create a new OverpassQuery for the given area identification.
-		/// </summary>
-		/// <param name="AreaId">An area reference using an OpenStreetMap area identification.</param>
-		public OverpassQuery(UInt64 AreaId)
-			: this()
-		{
-			InArea(AreaId);
-		}
-
-		#endregion
-
-		#region OverpassQuery(AreaName)
-
-		/// <summary>
-		/// Create a new OverpassQuery for the given area name.
-		/// </summary>
-		/// <param name="AreaName">an area reference using an OpenStreetMap area name. This will search for the given name via the Nominatim API and use the first matching result (normally this is the result having the highest importance).</param>
-		public OverpassQuery(String AreaName)
-			: this()
-		{
-			InArea(AreaName);
-		}
-		public OverpassQuery(BoundingBox bbox)
-			: this()
-		{
-			InBBox(bbox);
-		}
-
-		#endregion
-
-		#endregion
-
-
-		#region InArea(AreaId)
-
-		/// <summary>
-		/// Add an area reference using an OpenStreetMap area identification.
-		/// </summary>
-		/// <param name="AreaId">A OpenStreetMap area identification</param>
-		public OverpassQuery InArea(UInt64 AreaId)
-		{
-			this._AreaId = AreaId;
-			return this;
-		}
-
-		#endregion
-
-		#region InArea(AreaName)
-
-		/// <summary>
-		/// Add an area reference using an OpenStreetMap area name.
-		/// This will search for the given name via the Nominatim API and use the first matching result (normally this is the result having the highest importance).
-		/// </summary>
-		/// <param name="AreaName">A OpenStreetMap area name</param>
-		public OverpassQuery InArea(String AreaName)
-		{
-
-			using (var HTTPClient = new HttpClient())
-			{
-
-				try
-				{
-					HTTPClient.DefaultRequestHeaders.Referrer = new Uri("https://elevationapi.com");
-
-					// Note: This query currently does not support to narrow down the results to be of "osm_type = relation".
-					//       Therefore we query up to 100 results and hope that at least one will be of this relation type.
-					using (var ResponseMessage = HTTPClient.GetAsync(NominatimAPI_URI + "/" + AreaName + "?format=json&addressdetails=1&limit=100"))
-					{
-						ResponseMessage.Wait();
+            /// <summary>
+            /// Query nodes.
+            /// </summary>
+            Nodes,
 
-						if (ResponseMessage.Result.StatusCode == HttpStatusCode.OK)
-						{
+            /// <summary>
+            /// Query ways.
+            /// </summary>
+            Ways,
 
-							using (var ResponseContent = ResponseMessage.Result.Content)
-							{
+            /// <summary>
+            /// Query relations.
+            /// </summary>
+            Relations,
 
-								var result = ResponseContent.ReadAsStringAsync();
+            /// <summary>
+            /// Query nodes, ways and relations.
+            /// </summary>
+            Any
 
-								// [
-								//    {
-								//        "place_id:        "158729066",
-								//        "licence:         "Data © OpenStreetMap contributors, ODbL 1.0. http://www.openstreetmap.org/copyright",
-								//        "osm_type:        "relation",
-								//        "osm_id: "        62693",
-								//        "boundingbox: [
-								//              "50.856077",
-								//              "50.988898",
-								//              "11.4989589",
-								//              "11.6728014"
-								//        "],
-								//        "lat:             "50.9221871",
-								//        "lon:             "11.5888846280636",
-								//        "display_name:    "Jena, Thüringen, Deutschland",
-								//        "class:           "boundary",
-								//        "type:            "administrative",
-								//        "importance:      0.72701320621596,
-								//        "icon:            "http://nominatim.openstreetmap.org/images/mapicons/poi_boundary_administrative.p.20.png",
-								//        "address: {
-								//              "county:          "Jena",
-								//              "state:           "Thüringen",
-								//              "country:         "Deutschland",
-								//              "country_code:    "de"
-								//        }
-								//    }
-								// ]
-								var JSON = JArray.Parse(result.Result).
-											   Children<JObject>().
-											   Where(JSONObject => JSONObject["osm_type"].ToString() == "relation").
-											   FirstOrDefault();
+        }
 
-								// https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#
-								//
-								//By convention the area id can be calculated from an existing OSM way 
-								// by adding 2400000000 to its OSM id, 
-								// or in case of a relation by adding 3600000000 respectively
+        #endregion
 
-								if (JSON != null)
-									this._AreaId = UInt64.Parse(JSON["osm_id"].ToString()) + 3600000000;
+        #region Constructor(s)
 
-								return this;
+        #region OverpassQuery()
 
-							}
+        /// <summary>
+        /// Create a new OverpassQuery.
+        /// </summary>
+        public OverpassQuery()
+        {
 
-						}
+            _AreaId = 0;
+            _BBox = null;
 
-					}
+            CurrentContext = QueryContext.none;
+
+            Nodes = new List<List<KeyValuePair<String, String>>>();
+            Ways = new List<List<KeyValuePair<String, String>>>();
+            Relations = new List<List<KeyValuePair<String, String>>>();
+            NodesRelations = new List<string>();
 
-				}
+        }
 
-				catch (OperationCanceledException)
-				{ }
+        #endregion
 
-			}
+        #region OverpassQuery(AreaId)
 
-			throw new Exception();
+        /// <summary>
+        /// Create a new OverpassQuery for the given area identification.
+        /// </summary>
+        /// <param name="AreaId">An area reference using an OpenStreetMap area identification.</param>
+        public OverpassQuery(UInt64 AreaId)
+            : this()
+        {
+            InArea(AreaId);
+        }
+
+
+        #endregion
+
+        #region OverpassQuery(AreaName)
+
+        /// <summary>
+        /// Create a new OverpassQuery for the given area name.
+        /// </summary>
+        /// <param name="AreaName">an area reference using an OpenStreetMap area name. This will search for the given name via the Nominatim API and use the first matching result (normally this is the result having the highest importance).</param>
+        public OverpassQuery(String AreaName)
+            : this()
+        {
+            InArea(AreaName);
+        }
+        public OverpassQuery(BoundingBox bbox)
+            : this()
+        {
+            InBBox(bbox);
+        }
+
+        #endregion
+
+        #endregion
+
+
+        #region InArea(AreaId)
+
+        /// <summary>
+        /// Add an area reference using an OpenStreetMap area identification.
+        /// </summary>
+        /// <param name="AreaId">A OpenStreetMap area identification</param>
+        public OverpassQuery InArea(UInt64 AreaId)
+        {
+            this._AreaId = AreaId;
+            return this;
+        }
+
+        #endregion
+
+        #region SelectFilter(filter)
+
+        /// <summary>
+        /// Add an area reference using an OpenStreetMap area identification.
+        /// </summary>
+        /// <param name="AreaId">A OpenStreetMap area identification</param>
+        public OverpassQuery SelectFilter(string filter)
+        {
+            this._Filter = filter;
+            return this;
+        }
+
+        #endregion
+
+        #region InArea(AreaName)
+
+        /// <summary>
+        /// Add an area reference using an OpenStreetMap area name.
+        /// This will search for the given name via the Nominatim API and use the first matching result (normally this is the result having the highest importance).
+        /// </summary>
+        /// <param name="AreaName">A OpenStreetMap area name</param>
+        public OverpassQuery InArea(String AreaName)
+        {
+
+            using (var HTTPClient = new HttpClient())
+            {
+
+                try
+                {
+                    HTTPClient.DefaultRequestHeaders.Referrer = new Uri("https://elevationapi.com");
+
+                    // Note: This query currently does not support to narrow down the results to be of "osm_type = relation".
+                    //       Therefore we query up to 100 results and hope that at least one will be of this relation type.
+                    using (var ResponseMessage = HTTPClient.GetAsync(NominatimAPI_URI + "/" + AreaName + "?format=json&addressdetails=1&limit=100"))
+                    {
+                        ResponseMessage.Wait();
 
-		}
+                        if (ResponseMessage.Result.StatusCode == HttpStatusCode.OK)
+                        {
 
-		#endregion
+                            using (var ResponseContent = ResponseMessage.Result.Content)
+                            {
 
-		#region InBBox(bbox)
+                                var result = ResponseContent.ReadAsStringAsync();
 
-		public OverpassQuery InBBox(BoundingBox bbox)
-		{
-			this._BBox = bbox;
-			return this;
-		}
+                                // [
+                                //    {
+                                //        "place_id:        "158729066",
+                                //        "licence:         "Data © OpenStreetMap contributors, ODbL 1.0. http://www.openstreetmap.org/copyright",
+                                //        "osm_type:        "relation",
+                                //        "osm_id: "        62693",
+                                //        "boundingbox: [
+                                //              "50.856077",
+                                //              "50.988898",
+                                //              "11.4989589",
+                                //              "11.6728014"
+                                //        "],
+                                //        "lat:             "50.9221871",
+                                //        "lon:             "11.5888846280636",
+                                //        "display_name:    "Jena, Thüringen, Deutschland",
+                                //        "class:           "boundary",
+                                //        "type:            "administrative",
+                                //        "importance:      0.72701320621596,
+                                //        "icon:            "http://nominatim.openstreetmap.org/images/mapicons/poi_boundary_administrative.p.20.png",
+                                //        "address: {
+                                //              "county:          "Jena",
+                                //              "state:           "Thüringen",
+                                //              "country:         "Deutschland",
+                                //              "country_code:    "de"
+                                //        }
+                                //    }
+                                // ]
+                                var JSON = JArray.Parse(result.Result).
+                                               Children<JObject>().
+                                               Where(JSONObject => JSONObject["osm_type"].ToString() == "relation").
+                                               FirstOrDefault();
 
-		#endregion
+                                // https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#
+                                //
+                                //By convention the area id can be calculated from an existing OSM way 
+                                // by adding 2400000000 to its OSM id, 
+                                // or in case of a relation by adding 3600000000 respectively
 
+                                if (JSON != null)
+                                    this._AreaId = UInt64.Parse(JSON["osm_id"].ToString()) + 3600000000;
 
-		#region WithAny(Type, Value = "")
+                                return this;
 
-		/// <summary>
-		/// Query nodes, ways and relations.
-		/// </summary>
-		/// <param name="Type">The key to search for.</param>
-		/// <param name="Value">The value to search for.</param>
-		public OverpassQuery WithAny(String Type, String Value = "")
-		{
+                            }
 
-			Nodes.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
-			Ways.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
-			Relations.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
+                        }
 
-			CurrentContext = QueryContext.Any;
+                    }
 
-			return this;
+                }
 
-		}
+                catch (OperationCanceledException)
+                { }
 
-		#endregion
+            }
 
-		#region WithNodes(NodeType, Value = "")
+            throw new Exception();
 
-		/// <summary>
-		/// Query nodes.
-		/// </summary>
-		/// <param name="NodeType">The key to search for.</param>
-		/// <param name="Value">The value to search for.</param>
-		public OverpassQuery WithNodes(String NodeType, String Value = "")
-		{
+        }
 
-			Nodes.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(NodeType, Value) });
+        #endregion
 
-			CurrentContext = QueryContext.Nodes;
+        #region InBBox(bbox)
 
-			return this;
+        public OverpassQuery InBBox(BoundingBox bbox)
+        {
+            this._BBox = bbox;
+            return this;
+        }
 
-		}
+        #endregion
 
-		#endregion
 
-		#region WithWays(WayType, Value = "")
+        #region WithAny(Type, Value = "")
 
-		/// <summary>
-		/// Query OSM ways.
-		/// </summary>
-		/// <param name="WayType">The key to search for.</param>
-		/// <param name="Value">The value to search for.</param>
-		public OverpassQuery WithWays(String WayType, String Value = "")
-		{
+        /// <summary>
+        /// Query nodes, ways and relations.
+        /// </summary>
+        /// <param name="Type">The key to search for.</param>
+        /// <param name="Value">The value to search for.</param>
+        public OverpassQuery WithAny(String Type, String Value = "")
+        {
 
-			Ways.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(WayType, Value) });
+            Nodes.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
+            Ways.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
+            Relations.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(Type, Value) });
 
-			CurrentContext = QueryContext.Ways;
+            CurrentContext = QueryContext.Any;
 
-			return this;
+            return this;
 
-		}
+        }
 
-		#endregion
+        #endregion
 
-		#region WithRelations(RelationType, Value = "")
+        #region WithNodes(NodeType, Value = "")
 
-		/// <summary>
-		/// Query OSM relations.
-		/// </summary>
-		/// <param name="RelationType">The key to search for.</param>
-		/// <param name="Value">The value to search for.</param>
-		public OverpassQuery WithRelations(String RelationType, String Value = "")
-		{
+        /// <summary>
+        /// Query nodes.
+        /// </summary>
+        /// <param name="NodeType">The key to search for.</param>
+        /// <param name="Value">The value to search for.</param>
+        public OverpassQuery WithNodes(String NodeType, String Value = "")
+        {
 
-			Relations.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(RelationType, Value) });
+            Nodes.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(NodeType, Value) });
 
-			CurrentContext = QueryContext.Relations;
+            CurrentContext = QueryContext.Nodes;
 
-			return this;
+            return this;
 
-		}
+        }
+        public OverpassQuery WithNodesHavingRelation(String RelationType, String Value = "")
+        {
 
-		#endregion
+            NodesRelations.Add(RelationType);
 
-		#region And(Type, Value = "")
+            CurrentContext = QueryContext.Nodes;
 
-		/// <summary>
-		/// Query the current context. This allows you to chain a query via AND.
-		/// </summary>
-		/// <param name="Type">The key to search for.</param>
-		/// <param name="Value">The value to search for.</param>
-		public OverpassQuery And(String Type, String Value = "")
-		{
+            return this;
 
-			switch (CurrentContext)
-			{
+        }
+        #endregion
 
-				case QueryContext.none: throw new Exception("Bad request!");
+        #region WithWays(WayType, Value = "")
 
-				case QueryContext.Nodes: Nodes.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
-				case QueryContext.Ways: Ways.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
-				case QueryContext.Relations: Relations.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
+        /// <summary>
+        /// Query OSM ways.
+        /// </summary>
+        /// <param name="WayType">The key to search for.</param>
+        /// <param name="Value">The value to search for.</param>
+        public OverpassQuery WithWays(String WayType, String Value = "")
+        {
 
-				case QueryContext.Any:
-					Nodes.Last().Add(new KeyValuePair<String, String>(Type, Value));
-					Ways.Last().Add(new KeyValuePair<String, String>(Type, Value));
-					Relations.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
+            Ways.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(WayType, Value) });
 
-			}
+            CurrentContext = QueryContext.Ways;
 
-			return this;
+            return this;
 
-		}
+        }
 
-		#endregion
+        #endregion
 
+        #region WithRelations(RelationType, Value = "")
 
-		#region SetTimeout(Timeout)
+        /// <summary>
+        /// Query OSM relations.
+        /// </summary>
+        /// <param name="RelationType">The key to search for.</param>
+        /// <param name="Value">The value to search for.</param>
+        public OverpassQuery WithRelations(String RelationType, String Value = "")
+        {
 
-		/// <summary>
-		/// Set the query timeout.
-		/// </summary>
-		/// <param name="Timeout">The timeout value.</param>
-		public OverpassQuery SetTimeout(UInt32 Timeout)
-		{
+            Relations.Add(new List<KeyValuePair<String, String>>() { new KeyValuePair<String, String>(RelationType, Value) });
 
-			if (Timeout > 0)
-				_QueryTimeout = Timeout;
+            CurrentContext = QueryContext.Relations;
 
-			return this;
+            return this;
 
-		}
+        }
 
-		#endregion
+        #endregion
 
-		#region RunQuery(Timeout = 0)
+        #region And(Type, Value = "")
 
-		/// <summary>
-		/// Execute this Overpass query.
-		/// </summary>
-		/// <returns>A Overpass query result.</returns>
-		public async Task<OverpassResult> RunQuery(UInt32 Timeout = 0)
-		{
+        /// <summary>
+        /// Query the current context. This allows you to chain a query via AND.
+        /// </summary>
+        /// <param name="Type">The key to search for.</param>
+        /// <param name="Value">The value to search for.</param>
+        public OverpassQuery And(String Type, String Value = "")
+        {
 
-			if (Timeout > 0)
-				_QueryTimeout = Timeout;
+            switch (CurrentContext)
+            {
 
-			using (var HTTPClient = new HttpClient())
-			{
+                case QueryContext.none: throw new Exception("Bad request!");
 
-				try
-				{
+                case QueryContext.Nodes: Nodes.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
+                case QueryContext.Ways: Ways.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
+                case QueryContext.Relations: Relations.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
 
-					using (var ResponseMessage = await HTTPClient.PostAsync(OverpassAPI_URI, new StringContent(this.ToString())))
-					{
+                case QueryContext.Any:
+                    Nodes.Last().Add(new KeyValuePair<String, String>(Type, Value));
+                    Ways.Last().Add(new KeyValuePair<String, String>(Type, Value));
+                    Relations.Last().Add(new KeyValuePair<String, String>(Type, Value)); break;
 
-						if (ResponseMessage.StatusCode == HttpStatusCode.OK)
-						{
+            }
 
-							using (var ResponseContent = ResponseMessage.Content)
-							{
+            return this;
 
-								// {
-								//   "version": 0.6,
-								//   "generator": "Overpass API",
-								//   "osm3s": {
-								//     "timestamp_osm_base":    "2014-11-29T20:02:02Z",
-								//     "timestamp_areas_base":  "2014-11-29T08:42:02Z",
-								//     "copyright":             "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
-								//   },
-								//   "elements": [
-								//                   {
-								//                     "type": "node",
-								//                     "id": 1875593753,
-								//                     "lat": 50.9292604,
-								//                     "lon": 11.5824008,
-								//                     "tags": {
-								//                       "addr:city": "Jena",
-								//                       "addr:housenumber": "26",
-								//                       "addr:postcode": "07743",
-								//                       "addr:street": "Krautgasse",
-								//                       "amenity": "community_centre",
-								//                       "building:level": "1",
-								//                       "club": "it",
-								//                       "contact:phone": "0162/6318746",
-								//                       "contact:website": "https://www.krautspace.de",
-								//                       "drink:club-mate": "yes",
-								//                       "leisure": "hackerspace",
-								//                       "name": "Krautspace",
-								//                       "office": "club",
-								//                       "operator": "Hackspace Jena e.V."
-								//                     }
-								//                   }
-								//               ]
-								// }
+        }
 
-								return await ResponseContent.
-												 ReadAsStringAsync().
-												 ContinueWith(QueryTask => new OverpassResult(this,
-																							  JObject.Parse(QueryTask.Result)));
+        #endregion
 
-							}
 
-						}
+        #region SetTimeout(Timeout)
 
-						else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
-							throw new Exception("Bad request!");
+        /// <summary>
+        /// Set the query timeout.
+        /// </summary>
+        /// <param name="Timeout">The timeout value.</param>
+        public OverpassQuery SetTimeout(UInt32 Timeout)
+        {
 
-						else if (((Int32)ResponseMessage.StatusCode) == 429)
-							throw new Exception("Too Many Requests!");
+            if (Timeout > 0)
+                _QueryTimeout = Timeout;
 
-						else
-						{
-						}
+            return this;
 
-					}
+        }
 
-				}
+        #endregion
 
-				catch (OperationCanceledException)
-				{ }
+        #region RunQuery(Timeout = 0)
 
-				catch (Exception e)
-				{
-					throw new Exception("The OverpassQuery led to an error!", e);
-				}
+        /// <summary>
+        /// Execute this Overpass query.
+        /// </summary>
+        /// <returns>A Overpass query result.</returns>
+        public async Task<OverpassResult> RunQuery(UInt32 Timeout = 0)
+        {
 
-			}
+            if (Timeout > 0)
+                _QueryTimeout = Timeout;
 
-			throw new Exception("General HTTP client error!");
+            using (var HTTPClient = new HttpClient())
+            {
 
-		}
+                try
+                {
 
-		#endregion
+                    using (var ResponseMessage = await HTTPClient.PostAsync(OverpassAPI_URI, new StringContent(this.ToString())))
+                    {
 
+                        if (ResponseMessage.StatusCode == HttpStatusCode.OK)
+                        {
 
-		#region ClearAll()
+                            using (var ResponseContent = ResponseMessage.Content)
+                            {
 
-		/// <summary>
-		/// Clear all internal node, way and relation queries and the area identification.
-		/// </summary>
-		public OverpassQuery ClearAll()
-		{
+                                // {
+                                //   "version": 0.6,
+                                //   "generator": "Overpass API",
+                                //   "osm3s": {
+                                //     "timestamp_osm_base":    "2014-11-29T20:02:02Z",
+                                //     "timestamp_areas_base":  "2014-11-29T08:42:02Z",
+                                //     "copyright":             "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+                                //   },
+                                //   "elements": [
+                                //                   {
+                                //                     "type": "node",
+                                //                     "id": 1875593753,
+                                //                     "lat": 50.9292604,
+                                //                     "lon": 11.5824008,
+                                //                     "tags": {
+                                //                       "addr:city": "Jena",
+                                //                       "addr:housenumber": "26",
+                                //                       "addr:postcode": "07743",
+                                //                       "addr:street": "Krautgasse",
+                                //                       "amenity": "community_centre",
+                                //                       "building:level": "1",
+                                //                       "club": "it",
+                                //                       "contact:phone": "0162/6318746",
+                                //                       "contact:website": "https://www.krautspace.de",
+                                //                       "drink:club-mate": "yes",
+                                //                       "leisure": "hackerspace",
+                                //                       "name": "Krautspace",
+                                //                       "office": "club",
+                                //                       "operator": "Hackspace Jena e.V."
+                                //                     }
+                                //                   }
+                                //               ]
+                                // }
 
-			_AreaId = 0;
+                                return await ResponseContent.
+                                                 ReadAsStringAsync().
+                                                 ContinueWith(QueryTask => new OverpassResult(this,
+                                                                                              JObject.Parse(QueryTask.Result)));
 
-			Nodes.Clear();
-			Ways.Clear();
-			Relations.Clear();
+                            }
 
-			return this;
+                        }
 
-		}
+                        else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
+                            throw new Exception("Bad request!");
 
-		#endregion
+                        else if (((Int32)ResponseMessage.StatusCode) == 429)
+                            throw new Exception("Too Many Requests!");
 
-		#region ClearAll_ExceptAreaId()
+                        else
+                        {
+                        }
 
-		/// <summary>
-		/// Clear all internal node, way and relation queries without the area identification.
-		/// </summary>
-		public OverpassQuery ClearAll_ExceptAreaId()
-		{
+                    }
 
-			Nodes.Clear();
-			Ways.Clear();
-			Relations.Clear();
+                }
 
-			return this;
+                catch (OperationCanceledException)
+                { }
 
-		}
+                catch (Exception e)
+                {
+                    throw new Exception("The OverpassQuery led to an error!", e);
+                }
 
-		#endregion
+            }
 
+            throw new Exception("General HTTP client error!");
 
-		#region (private) FormatQuery(Type, Collection)
+        }
 
-		/// <summary>
-		/// Format the given query based on its type and collection.
-		/// </summary>
-		/// <param name="Type">The type of the query (node, way, relation).</param>
-		/// <param name="Collection">The collection of query items.</param>
-		private String FormatQuery(String Type,
-								   IEnumerable<KeyValuePair<String, String>> Collection)
-		{
+        #endregion
 
-			string query = String.Concat(Type,
-								 Collection.Select(Item => String.Concat(@"[""", Item.Key, @"""", (Item.Value != "" ? @"=""" + Item.Value + @"""" : ""), "]")).
-									Aggregate((a, b) => a + b));
 
+        #region ClearAll()
 
-			if (_AreaId > 0)
-			{
-				query = string.Concat(query, " (area.searchArea)");
-			}
-			if (_BBox !=null)
-			{
-				query = string.Concat(query, " (", _BBox.ToString() , ")");
-			}
+        /// <summary>
+        /// Clear all internal node, way and relation queries and the area identification.
+        /// </summary>
+        public OverpassQuery ClearAll()
+        {
 
-			query = string.Concat(query, ";");
+            _AreaId = 0;
 
-			return query;
+            Nodes.Clear();
+            Ways.Clear();
+            Relations.Clear();
 
-		}
+            return this;
 
-		#endregion
+        }
 
-		#region ToString()
+        #endregion
 
-		/// <summary>
-		/// Return a string representation of this object.
-		/// </summary>
-		public override String ToString()
-		{
+        #region ClearAll_ExceptAreaId()
 
-			var QueryString = new StringBuilder();
+        /// <summary>
+        /// Clear all internal node, way and relation queries without the area identification.
+        /// </summary>
+        public OverpassQuery ClearAll_ExceptAreaId()
+        {
 
-			QueryString.AppendLine("[out:json]");
-			QueryString.AppendLine("[timeout:" + _QueryTimeout + "];");
+            Nodes.Clear();
+            Ways.Clear();
+            Relations.Clear();
 
-			if (_AreaId > 0)
-				QueryString.AppendLine("area(" + _AreaId.ToString() + ")->.searchArea;");
+            return this;
 
-			QueryString.AppendLine("(");
+        }
 
-			if (Nodes.Count > 0)
-				Nodes.ForEach(Node => QueryString.AppendLine(FormatQuery("node", Node)));
+        #endregion
 
-			if (Ways.Count > 0)
-				Ways.ForEach(Way => QueryString.AppendLine(FormatQuery("way", Way)));
 
-			if (Relations.Count > 0)
-				Relations.ForEach(Relation => QueryString.AppendLine(FormatQuery("relation", Relation)));
+        #region (private) FormatQuery(Type, Collection)
 
-			QueryString.AppendLine(");");
+        /// <summary>
+        /// Format the given query based on its type and collection.
+        /// </summary>
+        /// <param name="Type">The type of the query (node, way, relation).</param>
+        /// <param name="Collection">The collection of query items.</param>
+        private String FormatQuery(String Type,
+                                   IEnumerable<KeyValuePair<String, String>> Collection)
+        {
 
-			QueryString.AppendLine("out body;");
-			QueryString.AppendLine(">;");
-			QueryString.AppendLine("out skel qt;");
+            string query = String.Concat(Type,
+                                 Collection.Select(Item => String.Concat(@"[""", Item.Key, @"""", (Item.Value != "" ? @"=""" + Item.Value + @"""" : ""), "]")).
+                                    Aggregate((a, b) => a + b));
 
-			var result = QueryString.ToString();
-			return result;
 
-		}
+            if (_AreaId > 0)
+            {
+                query = string.Concat(query, " (area.searchArea)");
+            }
+            if (_BBox != null)
+            {
+                query = string.Concat(query, " (", _BBox.ToString(), ")");
+            }
+            if (_Filter != null)
+            {
+                query = string.Concat(query, "->", _Filter);
+            }
 
-		#endregion
+            query = string.Concat(query, ";");
 
-	}
+            return query;
+
+        }
+
+        #endregion
+
+        #region ToString()
+
+        /// <summary>
+        /// Return a string representation of this object.
+        /// </summary>
+        public override String ToString()
+        {
+
+            var QueryString = new StringBuilder();
+
+            QueryString.AppendLine("[out:json]");
+            QueryString.AppendLine("[timeout:" + _QueryTimeout + "];");
+
+            if (_AreaId > 0)
+            {
+
+                if (NodesRelations.Count == 0)
+                {
+                    QueryString.AppendLine("area(" + _AreaId.ToString() + ")->.searchArea;");
+                }
+                else
+                {
+                    QueryString.AppendLine($"area({_AreaId});");
+                    QueryString.AppendLine("out body;");
+                }
+            }
+
+            if (NodesRelations.Count == 0) QueryString.AppendLine("(");
+
+            if (Nodes.Count > 0)
+                Nodes.ForEach(Node => QueryString.AppendLine(FormatQuery("node", Node)));
+            if (NodesRelations.Count > 0)
+            {
+                if (_AreaId > 0)
+                {
+                    QueryString.AppendLine($"rel(area)->.relations;");
+                    QueryString.AppendLine($"(");
+                }
+                    NodesRelations.ForEach(rel => QueryString.AppendLine(string.Concat("node(r.relations:", '"', rel, '"', ");")));
+                if (_AreaId > 0)
+                {
+                   QueryString.AppendLine($");");
+                }
+            }
+
+            if (Ways.Count > 0)
+                Ways.ForEach(Way => QueryString.AppendLine(FormatQuery("way", Way)));
+
+            if (Relations.Count > 0)
+                Relations.ForEach(Relation => QueryString.AppendLine(FormatQuery("relation", Relation)));
+
+
+            if (NodesRelations.Count == 0)
+                QueryString.AppendLine(");");
+
+            QueryString.AppendLine("out body;");
+            QueryString.AppendLine(">;");
+            QueryString.AppendLine("out skel qt;");
+
+            var result = QueryString.ToString();
+            return result;
+
+        }
+
+        #endregion
+
+    }
 
 }
