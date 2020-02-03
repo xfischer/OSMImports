@@ -30,51 +30,90 @@ using org.GraphDefined.OpenDataAPI.OverpassAPI;
 namespace org.GraphDefined.OpenDataAPI.OSMImporter
 {
 
-	public static class Extentions
-	{
+    public static class Extentions
+    {
 
-		#region RunAll(this OverpassQuery, Filename)
+        #region RunAll(this OverpassQuery, Filename)
 
-		/// <summary>
-		/// Standard workflow...
-		/// </summary>
-		/// <param name="OverpassQuery">An Overpass query.</param>
-		/// <param name="FilenamePrefix">A file name prefix.</param>
-		public static void RunAll(this OverpassQuery OverpassQuery,
-									String FilenamePrefix)
-		{
+        /// <summary>
+        /// Standard workflow...
+        /// </summary>
+        /// <param name="OverpassQuery">An Overpass query.</param>
+        /// <param name="FilenamePrefix">A file name prefix.</param>
+        public static void RunAll(this OverpassQuery OverpassQuery,
+                                    String FilenamePrefix)
+        {
 
-			OverpassQuery.
-				ToFile(FilenamePrefix + ".json").
-				ToGeoJSONFile(FilenamePrefix + ".geojson").
-				ContinueWith(task => Console.WriteLine(FilenamePrefix + ".* files are ready!")).
-				Wait();
+            OverpassQuery.
+                ToFile(FilenamePrefix + ".json").
+                ToGeoJSONFile(FilenamePrefix + ".geojson").
+                ContinueWith(task => Console.WriteLine(FilenamePrefix + ".* files are ready!")).
+                Wait();
 
-		}
+        }
 
-		#endregion
+        #endregion
 
-	}
+    }
 
 
-	/// <summary>
-	/// A little demo... can be tested via http://overpass-turbo.eu
-	/// </summary>
-	public class Program
-	{
+    /// <summary>
+    /// A little demo... can be tested via http://overpass-turbo.eu
+    /// </summary>
+    public class Program
+    {
 
-		/// <summary>
-		/// Main...
-		/// </summary>
-		/// <param name="Arguments">CLI arguments...</param>
-		public static void Main(String[] Arguments)
-		{
+        /// <summary>
+        /// Main...
+        /// </summary>
+        /// <param name="Arguments">CLI arguments...</param>
+        public static void Main(String[] Arguments)
+        {
+            BoundingBox bboxAixTest = new BoundingBox(43.52705193777889, 5.446827714454083, 43.52763146564737, 5.44591576338902);
+            GetBuildings(bboxAixTest);
 
-			int msDelay = 2000;
-			Directory.CreateDirectory("output");
 
-			#region French "départements"
-			Dictionary<string, string> v_frenchDepartements = new Dictionary<string, string>();
+            // -----------------------------------------------------------------
+
+            Console.WriteLine("ready...");
+            Console.ReadLine();
+
+        }
+
+        public static void GetBuildings(BoundingBox inputBBox)
+        {
+            try
+            {
+                BoundingBox bbox = new BoundingBox(Math.Min(inputBBox.YMin, inputBBox.YMax)
+                    , Math.Min(inputBBox.XMin, inputBBox.XMax)
+                    , Math.Max(inputBBox.YMin, inputBBox.YMax)
+                    , Math.Max(inputBBox.XMin, inputBBox.XMax));
+                Directory.CreateDirectory("output");
+
+
+                new OverpassQuery(bbox)
+                    .WithWays("building")
+                    .ToGeoJSONFile("output/buildings.geojson")
+                     .RunNow();
+
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+        }
+
+        public static void GetDepartements()
+        {
+
+
+            int msDelay = 2000;
+            Directory.CreateDirectory("output");
+
+            #region French "départements"
+            Dictionary<string, string> v_frenchDepartements = new Dictionary<string, string>();
             v_frenchDepartements.Add("01", "Ain");
             v_frenchDepartements.Add("02", "Aisne");
             v_frenchDepartements.Add("03", "Allier");
@@ -175,98 +214,98 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
 
             foreach (var dep in v_frenchDepartements)
-			{
-				var areaId = new OverpassQuery(dep.Value).AreaId;
+            {
+                var areaId = new OverpassQuery(dep.Value).AreaId;
 
-				string dirname = string.Concat("output/", dep.Key);
+                string dirname = string.Concat("output/", dep.Key);
 
-				Directory.CreateDirectory(dirname);
+                Directory.CreateDirectory(dirname);
 
                 new OverpassQuery(areaId)
                     .SelectFilter(".relations")
                     .WithNodesHavingRelation("admin_centre")
-		            .ToGeoJSONFile(dirname + "/admin_centre.geojson")
-		            .RunNow();
+                    .ToGeoJSONFile(dirname + "/admin_centre.geojson")
+                    .RunNow();
 
-				Delay(msDelay);
-
-
-				//new OverpassQuery(areaId)
-				//	 .WithNodes("natural", "peak")
-				//		.ToGeoJSONFile(dirname + "/peak.geojson")
-				//		.RunNow();
-
-				//Delay(msDelay);
-
-				//new OverpassQuery(areaId)
-				//	 .WithNodes("natural", "saddle")
-				//		.ToGeoJSONFile(dirname + "/saddle.geojson")
-				//		.RunNow();
-
-				//Delay(msDelay);
-
-				//new OverpassQuery(areaId)
-				// .WithWays("waterway", "river")
-				//	.WithWays("natural", "water")
-				//	.ToGeoJSONFile(dirname + "/rivers.geojson")
-				//	.RunNow();
-
-				//Delay(msDelay);
-
-				//new OverpassQuery(areaId)
-				//	.WithRelations("landuse", "reservoir")
-				//	.WithRelations("natural", "water")
-				//	.ToGeoJSONFile(dirname + "/lakes.geojson")
-				//	.RunNow();
-
-				//Delay(msDelay);
-
-				Console.WriteLine($"{dep.Key} {dep.Value} done");
-			}
+                Delay(msDelay);
 
 
-			BoundingBox bboxLauzannier = new BoundingBox(44.34815879690078, 6.780796051025391, 44.45878010882453, 6.961898803710937);
-			// new OverpassQuery(bboxLauzannier).WithNodes("natural", "peak")
-			//	.RunAll("output/natural.peak");
+                //new OverpassQuery(areaId)
+                //	 .WithNodes("natural", "peak")
+                //		.ToGeoJSONFile(dirname + "/peak.geojson")
+                //		.RunNow();
 
-			//new OverpassQuery(bboxLauzannier).WithNodes("natural", "saddle")
-			//   .RunAll("output/natural.saddle");
+                //Delay(msDelay);
 
-			//new OverpassQuery(bboxLauzannier).WithWays("waterway", "river")
-			//   .RunAll("output/waterway.river");
+                //new OverpassQuery(areaId)
+                //	 .WithNodes("natural", "saddle")
+                //		.ToGeoJSONFile(dirname + "/saddle.geojson")
+                //		.RunNow();
 
-			//new OverpassQuery(bboxLauzannier).WithWays("natural", "water")
-			//   .RunAll("output/natural.water");
+                //Delay(msDelay);
 
-			//new OverpassQuery(bboxLauzannier).WithRelations("landuse", "reservoir")
-			//   .RunAll("output/landuse.reservoir");
+                //new OverpassQuery(areaId)
+                // .WithWays("waterway", "river")
+                //	.WithWays("natural", "water")
+                //	.ToGeoJSONFile(dirname + "/rivers.geojson")
+                //	.RunNow();
 
-			new OverpassQuery(bboxLauzannier)
-				.WithNodes("natural", "peak")
-				.WithNodes("natural", "saddle")
-				.WithWays("waterway", "river")
-				.WithWays("natural", "water")
-				.WithRelations("landuse", "reservoir")
-				.WithRelations("natural", "water")
-				.ToGeoJSONFile("output/fullBbox.geojson")
-				 .RunNow();
+                //Delay(msDelay);
+
+                //new OverpassQuery(areaId)
+                //	.WithRelations("landuse", "reservoir")
+                //	.WithRelations("natural", "water")
+                //	.ToGeoJSONFile(dirname + "/lakes.geojson")
+                //	.RunNow();
+
+                //Delay(msDelay);
+
+                Console.WriteLine($"{dep.Key} {dep.Value} done");
+            }
+
+
+            BoundingBox bboxLauzannier = new BoundingBox(44.34815879690078, 6.780796051025391, 44.45878010882453, 6.961898803710937);
+            // new OverpassQuery(bboxLauzannier).WithNodes("natural", "peak")
+            //	.RunAll("output/natural.peak");
+
+            //new OverpassQuery(bboxLauzannier).WithNodes("natural", "saddle")
+            //   .RunAll("output/natural.saddle");
+
+            //new OverpassQuery(bboxLauzannier).WithWays("waterway", "river")
+            //   .RunAll("output/waterway.river");
+
+            //new OverpassQuery(bboxLauzannier).WithWays("natural", "water")
+            //   .RunAll("output/natural.water");
+
+            //new OverpassQuery(bboxLauzannier).WithRelations("landuse", "reservoir")
+            //   .RunAll("output/landuse.reservoir");
+
+            new OverpassQuery(bboxLauzannier)
+                .WithNodes("natural", "peak")
+                .WithNodes("natural", "saddle")
+                .WithWays("waterway", "river")
+                .WithWays("natural", "water")
+                .WithRelations("landuse", "reservoir")
+                .WithRelations("natural", "water")
+                .ToGeoJSONFile("output/fullBbox.geojson")
+                 .RunNow();
 
 
 
 
-			// -----------------------------------------------------------------
+            // -----------------------------------------------------------------
 
-			Console.WriteLine("ready...");
-			Console.ReadLine();
+            Console.WriteLine("ready...");
+            Console.ReadLine();
 
-		}
+        }
 
-		private static void Delay(int msDelay)
-		{
-			Console.Write($"Waiting {msDelay} ms...");
-			Task.Delay(msDelay).Wait();
-			Console.Write("OK!");
-		}
-	}
+        private static void Delay(int msDelay)
+        {
+            Console.Write($"Waiting {msDelay} ms...");
+            Task.Delay(msDelay).Wait();
+            Console.Write("OK!");
+        }
+    }
 
 }

@@ -578,7 +578,11 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
                         }
 
                         else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
-                            throw new Exception("Bad request!");
+                        {
+                            var message = await ResponseMessage.Content.ReadAsStringAsync();
+                            throw new Exception("Bad request: " + message);
+                        }
+                            
 
                         else if (((Int32)ResponseMessage.StatusCode) == 429)
                             throw new Exception("Too Many Requests!");
