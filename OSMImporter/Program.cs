@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using org.GraphDefined.OpenDataAPI.OverpassAPI;
+using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -67,10 +68,10 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
         /// Main...
         /// </summary>
         /// <param name="Arguments">CLI arguments...</param>
-        public static void Main(String[] Arguments)
+        public static async Task Main(String[] Arguments)
         {
             BoundingBox bboxAixTest = new BoundingBox(43.52705193777889, 5.446827714454083, 43.52763146564737, 5.44591576338902);
-            GetBuildings(bboxAixTest);
+            var json = await GetBuildings(bboxAixTest);
 
 
             // -----------------------------------------------------------------
@@ -80,7 +81,7 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
         }
 
-        public static void GetBuildings(BoundingBox inputBBox)
+        public static Task<JObject> GetBuildings(BoundingBox inputBBox)
         {
             try
             {
@@ -91,16 +92,14 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
                 Directory.CreateDirectory("output");
 
 
-                new OverpassQuery(bbox)
+                return new OverpassQuery(bbox)
                     .WithWays("building")
-                    .ToGeoJSONFile("output/buildings.geojson")
-                     .RunNow();
-
+                    .ToGeoJSON();
 
             }
             catch (Exception ex)
             {
-
+                throw;
             }
 
         }
