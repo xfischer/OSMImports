@@ -25,6 +25,7 @@ using System.Collections.Generic;
 
 using org.GraphDefined.OpenDataAPI.OverpassAPI;
 using Newtonsoft.Json.Linq;
+using GeoJSON.Net.Feature;
 
 #endregion
 
@@ -81,7 +82,7 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
         }
 
-        public static Task<JObject> GetBuildings(BoundingBox inputBBox)
+        public static Task<FeatureCollection> GetBuildings(BoundingBox inputBBox)
         {
             try
             {
@@ -94,7 +95,7 @@ namespace org.GraphDefined.OpenDataAPI.OSMImporter
 
                 return new OverpassQuery(bbox)
                     .WithWays("building")
-                    .ToGeoJSON();
+                    .ToGeoJSONFile("buildings.json");
 
             }
             catch (Exception ex)

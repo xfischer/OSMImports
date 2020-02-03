@@ -20,7 +20,8 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-
+using GeoJSON.Net.Feature;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 #endregion
@@ -88,7 +89,14 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             return JSON;
 
         }
+        public static FeatureCollection ToFile(this FeatureCollection JSON, String Filename)
+        {
 
+            File.WriteAllText(Filename, JsonConvert.SerializeObject(JSON));
+
+            return JSON;
+
+        }
         #endregion
 
         #region ToFile(this JSON, FilenameBuilder)
@@ -102,6 +110,14 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         {
 
             File.WriteAllText(FilenameBuilder(JSON), JSON.ToString());
+
+            return JSON;
+
+        }
+        public static FeatureCollection ToFile(this FeatureCollection JSON, Func<FeatureCollection, String> FilenameBuilder)
+        {
+
+            File.WriteAllText(FilenameBuilder(JSON), JsonConvert.SerializeObject(JSON));
 
             return JSON;
 
@@ -125,6 +141,16 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
                                         });
 
         }
+        public static Task<FeatureCollection> ToFile(this Task<FeatureCollection> JSONTask, String Filename)
+        {
+
+            return JSONTask.ContinueWith(task => {
+                File.WriteAllText(Filename, JsonConvert.SerializeObject(JSONTask.Result));
+                return JSONTask.Result;
+            });
+
+        }
+
 
         #endregion
 

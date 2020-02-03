@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
+using GeoJSON.Net.Feature;
 
 #endregion
 
@@ -58,6 +59,10 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         {
             JSONTask.ContinueWith(task => Console.WriteLine("ready!")).Wait();
         }
+        public static void RunNow(this Task<FeatureCollection> JSONTask)
+        {
+            JSONTask.ContinueWith(task => Console.WriteLine("ready!")).Wait();
+        }
 
         #endregion
 
@@ -68,6 +73,10 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// </summary>
         /// <param name="JSONTask">A Overpass query result task.</param>
         public static void RunNow(this Task<IEnumerable<JObject>> JSONTask)
+        {
+            JSONTask.ContinueWith(task => { task.Result.ToArray(); Console.WriteLine("Multiple ready!"); }).Wait();
+        }
+        public static void RunNow(this Task<IEnumerable<FeatureCollection>> JSONTask)
         {
             JSONTask.ContinueWith(task => { task.Result.ToArray(); Console.WriteLine("Multiple ready!"); }).Wait();
         }

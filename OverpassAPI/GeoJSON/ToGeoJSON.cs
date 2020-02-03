@@ -24,6 +24,8 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 using org.GraphDefined.Vanaheimr.Illias;
+using GeoJSON.Net.Feature;
+using GeoJSON.Net.Geometry;
 //using org.GraphDefined.Vanaheimr.Illias;
 
 #endregion
@@ -43,7 +45,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// Run the given Overpass query and convert the result to GeoJSON.
         /// </summary>
         /// <param name="OverpassQuery">An Overpass query.</param>
-        public static Task<JObject> ToGeoJSON(this OverpassQuery OverpassQuery)
+        public static Task<FeatureCollection> ToGeoJSON(this OverpassQuery OverpassQuery)
         {
 
             return OverpassQuery.
@@ -60,7 +62,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// Convert the given Overpass query result to GeoJSON.
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
-        public static Task<JObject> ToGeoJSON(this Task<OverpassResult> ResultTask)
+        public static Task<FeatureCollection> ToGeoJSON(this Task<OverpassResult> ResultTask)
         {
 
             return ResultTask.ContinueWith(task => {
@@ -220,36 +222,15 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
                 //    "features": [ ]
                 // }
 
-                return new JObject(
+                List<Feature> features = Nodes.Values.Where(n => n.Tags.Count > 0).Select(n => n.ToGeoJSON())
+                                        .Concat(Ways.Values.Where(n => n.Tags.Count > 0).Select(n => n.ToGeoJSON()))
+                                        .Concat(Relations.Values.Select(n => n.ToGeoJSON()))
+                                        .ToList();
 
-                    new JProperty("type",       "FeatureCollection"),
-                    new JProperty("generator",  "GraphDefined OSM Importer"),
-                    new JProperty("copyright",  ResultTask.Result.Copyright),
-                    new JProperty("timestamp",  DateTime.Now.ToIso8601()),
 
-                    new JProperty("features",   new JArray(Nodes.Values.
-                                                               // Do not include nodes which only have a geo coordinate, but not tags!
-                                                               // (They will be most likely only be useful within ways or relations)
-                                                               Where (n => n.Tags.Count > 0).
-                                                               Select(n => n.ToGeoJSON())).
+                var featureCollection = new FeatureCollection(features);
 
-                                                Concat(
-                                                new JArray(Ways.Values.
-                                                               // Do not include ways which do not have any tags!
-                                                               // (They will be most likely only be useful within relations)
-                                                               Where (w => w.Tags.Count > 0).
-                                                               Select(w => w.ToGeoJSON())) ).
-
-                                                Concat(
-                                                new JArray(Relations.Values.
-                                                               // Do not include nodes which only have a geo coordinate, but not tags!
-                                                               // (They will be most likely only be useful within ways or relations)
-                                                               //Where (r => r.Tags.Count > 0).
-                                                               Select(r => r.ToGeoJSON())) )
-
-                                                )
-
-                );
+                return featureCollection;
 
             });
 
@@ -265,7 +246,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// </summary>
         /// <param name="OverpassQuery">An Overpass query.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<JObject> ToGeoJSONFile(this OverpassQuery OverpassQuery, String Filename)
+        public static Task<FeatureCollection> ToGeoJSONFile(this OverpassQuery OverpassQuery, String Filename)
         {
 
             return OverpassQuery.
@@ -283,7 +264,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<JObject> ToGeoJSONFile(this Task<OverpassResult>  ResultTask,
+        public static Task<FeatureCollection> ToGeoJSONFile(this Task<OverpassResult>  ResultTask,
                                                   String                     Filename)
         {
             return ResultTask.ToGeoJSON().ToFile(Filename);
@@ -298,8 +279,8 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<JObject> ToGeoJSONFile(this Task<OverpassResult>  ResultTask,
-                                                  Func<JObject, String>      FilenameBuilder)
+        public static Task<FeatureCollection> ToGeoJSONFile(this Task<OverpassResult>  ResultTask,
+                                                  Func<FeatureCollection, String>      FilenameBuilder)
         {
             return ResultTask.ToGeoJSON().ContinueWith(t1 => t1.ToFile(FilenameBuilder(t1.Result)).Result);
         }
@@ -360,7 +341,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// Convert the given OSM node to a GeoJSON point feature.
         /// </summary>
         /// <param name="Node">An OSM node.</param>
-        public static JObject ToGeoJSON(this Node Node)
+        public static Feature ToGeoJSON(this Node Node)
         {
 
             // {
@@ -379,27 +360,22 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             //     }
             // }
 
-            return new JObject(
+            var id = string.Concat("node/", Node.Id);
+            Dictionary<string, object> props = new Dictionary<string, object>();
+            props.Add("@id", id);
+            foreach(var tag in Node.Tags)
+            {
+                props.Add(tag.Key, tag.Value);
+            }
+            var feature = new Feature(new Point(new Position(Node.Latitude, Node.Longitude)), props, id);
 
-                new JProperty("type",        "Feature"),
-                new JProperty("id",          "node/" + Node.Id),
-
-                new JProperty("properties",  new JObject(
-                        new List<JProperty>() { new JProperty("@id", "node/" + Node.Id) }.
-                        AddAndReturnList(Node.Tags.Select(kvp => new JProperty(kvp.Key, kvp.Value))).
-                        ToArray()
-                    )),
-
-                new JProperty("geometry",    new JObject(
-                    new JProperty("type",         "Point"),
-                    new JProperty("coordinates",  new JArray(Node.Longitude, Node.Latitude))
-                ))
-
-            );
+            return feature;
 
         }
 
         #endregion
+
+
 
         #region ToGeoJSON(this Way)
 
@@ -407,7 +383,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// Convert the given OSM way to a GeoJSON line feature.
         /// </summary>
         /// <param name="Way">An OSM way.</param>
-        public static JObject ToGeoJSON(this Way Way)
+        public static Feature ToGeoJSON(this Way Way)
         {
 
             // {
@@ -428,24 +404,27 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             var LastNode  = Way.Nodes.Last();
             var isClosed  = FirstNode.Latitude == LastNode.Latitude && FirstNode.Longitude == LastNode.Longitude;
 
-            return new JObject(
+            var id = string.Concat("way/", Way.Id);
+            Dictionary<string, object> props = new Dictionary<string, object>();
+            props.Add("@id", id);
+            foreach (var tag in Way.Tags)
+            {
+                props.Add(tag.Key, tag.Value);
+            }
+            IGeometryObject geometry;
+            var ring = new LineString(Way.Nodes.Select(n => new Position(n.Latitude, n.Longitude)));
+            if (isClosed)
+            {
+                geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+            }
+            else
+            {
 
-                new JProperty("type", "Feature"),
-                new JProperty("id",   "way/" + Way.Id),
+                geometry = ring;
+            }
+            var feature = new Feature(geometry, props, id);
 
-                new JProperty("properties", new JObject(
-                        new List<JProperty>() { new JProperty("@id", "way/" + Way.Id) }.
-                        AddAndReturnList(Way.Tags.Select(kvp => new JProperty(kvp.Key, kvp.Value))).
-                        ToArray()
-                    )),
-
-                new JProperty("geometry", new JObject(
-                    new JProperty("type",         isClosed ? "Polygon" : "LineString"),
-                    new JProperty("coordinates",  isClosed ? new JArray() { new JArray(Way.Nodes.Select(n => new JArray(n.Longitude, n.Latitude))) }
-                                                           : new JArray(Way.Nodes.Select(n => new JArray(n.Longitude, n.Latitude))))
-                ))
-
-            );
+            return feature;
 
         }
 
@@ -457,9 +436,8 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// Convert the given OSM relation to a GeoJSON line feature.
         /// </summary>
         /// <param name="Relation">An OSM relation.</param>
-        public static JObject ToGeoJSON(this Relation Relation)
+        public static Feature ToGeoJSON(this Relation Relation)
         {
-
             // {
             //     "type":  "Feature",
             //     "id":    "way/305352912",
@@ -576,52 +554,44 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             } while (RemainingGeoFeatures.Count > 0);
 
 
-            JProperty FeatureGeometry = null;
+            IGeometryObject geometry = null;
 
             if (ResultList.Count == 1)
             {
-
+                var ring = new LineString(CurrentGeoFeature.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude)));
                 if (ResultList.First().Type == GeoFeature.GeoType.Polygon)
-                    FeatureGeometry = new JProperty("geometry", new JObject(
-                                          new JProperty("type",        "Polygon"),
-                                          new JProperty("coordinates", new JArray() { new JArray(CurrentGeoFeature.GeoCoordinates.Select(geo => new JArray(geo.Longitude, geo.Latitude))) })
-                                      ));
+                {
+                    geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                }                  
                 else
-                    FeatureGeometry = new JProperty("geometry", new JObject(
-                                          new JProperty("type",        "LineString"),
-                                          new JProperty("coordinates", new JArray(CurrentGeoFeature.GeoCoordinates.Select(geo => new JArray(geo.Longitude, geo.Latitude))))
-                                      ));
-
+                {
+                    geometry = ring;
+                }
             }
             else
             {
+                var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude))));
 
                 if (ResultList.First().Type == GeoFeature.GeoType.Polygon)
-                    FeatureGeometry = new JProperty("geometry", new JObject(
-                                          new JProperty("type",        "Polygon"),
-                                          new JProperty("coordinates", new JArray(ResultList.Select(items => new JArray(items.GeoCoordinates.Select(geo => new JArray(geo.Longitude, geo.Latitude))))))
-                                      ));
+                {
+                    geometry = new Polygon(multiRing);
+                }
                 else
-                    FeatureGeometry = new JProperty("geometry", new JObject(
-                                          new JProperty("type",        "MultiLineString"),
-                                          new JProperty("coordinates", new JArray(ResultList.Select(items => new JArray(items.GeoCoordinates.Select(geo => new JArray(geo.Longitude, geo.Latitude))))))
-                                      ));
-
+                {
+                    geometry = new MultiLineString(multiRing);
+                }
             }
 
+            var id = string.Concat("relation/", Relation.Id);
+            Dictionary<string, object> props = new Dictionary<string, object>();
+            props.Add("@id", id);
+            foreach (var tag in Relation.Tags)
+            {
+                props.Add(tag.Key, tag.Value);
+            }
+            var feature = new Feature(geometry, props, id);
 
-                return new JObject(
-
-                    new JProperty("type", "Feature"),
-                    new JProperty("id", "relation/" + Relation.Id),
-
-                    new JProperty("properties", new JObject(
-                            new List<JProperty>() { new JProperty("@id", "relation/" + Relation.Id) }.
-                            AddAndReturnList(Relation.Tags.Select(kvp => new JProperty(kvp.Key, kvp.Value))).
-                            ToArray()
-                        )),
-                        FeatureGeometry
-                );
+            return feature;
 
         }
 
@@ -629,46 +599,9 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 
 
 
-        public static JObject ForEachFeature(this JObject GeoJSON, Action<JObject> Delegate)
-        {
+        
 
-             GeoJSON["features"].
-                 Children<JObject>().
-                 AsEnumerable().
-                 Select(Feature => new JObject(new JProperty("type",       "FeatureCollection"),
-                                               new JProperty("generator",  GeoJSON["generator"].ToString()),
-                                               new JProperty("copyright",  GeoJSON["copyright"].ToString()),
-                                               new JProperty("timestamp",  GeoJSON["timestamp"].ToString()),
-                                               new JProperty("features",   new JArray(Feature)))).
-                 ForEach(Delegate);
-
-             return GeoJSON;
-
-        }
-
-        public static Task<JObject> ForEachFeature(this Task<JObject> GeoJSONTask, Action<JObject> Delegate)
-        {
-            return GeoJSONTask.ContinueWith(t1 => t1.Result.ForEachFeature(Delegate));
-        }
-
-        public static IEnumerable<JObject> SplitFeatures(this JObject GeoJSON)
-        {
-
-             return GeoJSON["features"].
-                        Children<JObject>().
-                        AsEnumerable().
-                        Select(Feature => new JObject(new JProperty("type",       "FeatureCollection"),
-                                                      new JProperty("generator",  GeoJSON["generator"].ToString()),
-                                                      new JProperty("copyright",  GeoJSON["copyright"].ToString()),
-                                                      new JProperty("timestamp",  GeoJSON["timestamp"].ToString()),
-                                                      new JProperty("features",   new JArray(Feature))));
-
-        }
-
-        public static Task<IEnumerable<JObject>> SplitFeatures(this Task<JObject> GeoJSONTask)
-        {
-            return GeoJSONTask.ContinueWith(t1 => t1.Result.SplitFeatures());
-        }
+        
 
     }
 
