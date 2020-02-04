@@ -54,8 +54,6 @@
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />
     <Compile Include="Extensions\IListExtensions.cs" />
-    <Compile Include="GeoJSON\GeoFeature.cs" />
-    <Compile Include="GeoJSON\GeoCoord.cs" />
     <Compile Include="Relation.cs" />
     <Compile Include="Way.cs" />
     <Compile Include="Node.cs" />
@@ -65,6 +63,7 @@
     <Compile Include="ToFile.cs" />
     <Compile Include="OverpassResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="GeoJSON\GeoFeature.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

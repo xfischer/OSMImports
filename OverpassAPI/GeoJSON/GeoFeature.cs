@@ -23,6 +23,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
+using GeoJSON.Net.Geometry;
+using GeoJSON.Net;
 
 
 #endregion
@@ -36,54 +38,17 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
     public struct GeoFeature
     {
 
-        #region (enum) GeoType
-
-        /// <summary>
-        /// The type of a OSM relation.
-        /// </summary>
-        public enum GeoType
-        {
-
-            /// <summary>
-            /// undefined.
-            /// </summary>
-            undefined,
-
-            /// <summary>
-            /// A simple line.
-            /// </summary>
-            LineString,
-
-            /// <summary>
-            /// A set of lines.
-            /// </summary>
-            MultiLineString,
-
-            /// <summary>
-            /// A simple polygon.
-            /// </summary>
-            Polygon,
-
-            /// <summary>
-            /// A MultiPolygon.
-            /// </summary>
-            MultiPolygon
-
-        }
-
-        #endregion
-
         #region Data
 
         /// <summary>
         /// A list of geo coordinates.
         /// </summary>
-        public readonly List<GeoCoord> GeoCoordinates;
+        public readonly List<Position> GeoCoordinates;
 
         /// <summary>
         /// A geo latitude.
         /// </summary>
-        public GeoType Type;
+        public GeoJSONObjectType Type;
 
         #endregion
 
@@ -94,10 +59,10 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
         /// </summary>
         /// <param name="_GeoCoordinates">A list of geo coordinates.</param>
         /// <param name="_Type">The type of the feature.</param>
-        public GeoFeature(IEnumerable<GeoCoord>  _GeoCoordinates,
-                          GeoType                _Type = GeoType.undefined)
+        public GeoFeature(IEnumerable<Position>  _GeoCoordinates,
+                          GeoJSONObjectType _Type = GeoJSONObjectType.Point)
         {
-            GeoCoordinates  = new List<GeoCoord>(_GeoCoordinates);
+            GeoCoordinates  = new List<Position>(_GeoCoordinates);
             Type            = _Type;
         }
 

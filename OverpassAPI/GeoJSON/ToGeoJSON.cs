@@ -26,6 +26,7 @@ using Newtonsoft.Json.Linq;
 using org.GraphDefined.Vanaheimr.Illias;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
+using GeoJSON.Net;
 //using org.GraphDefined.Vanaheimr.Illias;
 
 #endregion
@@ -459,7 +460,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 
             // Relation.Ways.Select(Way => new JArray(Way.Nodes.Select(Node => new JArray(Node.Longitude, Node.Latitude))))
 
-            var RemainingGeoFeatures  = Relation.Ways.Select(Way => new GeoFeature(Way.Nodes.Select(Node => new GeoCoord(Node.Longitude, Node.Latitude)))).ToList();
+            var RemainingGeoFeatures  = Relation.Ways.Select(Way => new GeoFeature(Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
             var ResultList            = new List<GeoFeature>();
 
             Byte            Found = 0;
@@ -483,7 +484,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
                 if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString()         != "route") &&
                     CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
                 {
-                    CurrentGeoFeature.Type = GeoFeature.GeoType.Polygon;
+                    CurrentGeoFeature.Type =  GeoJSONObjectType.Polygon;
                     ResultList.Add(CurrentGeoFeature);
                 }
 
@@ -544,8 +545,8 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
 
                     CurrentGeoFeature.Type  = (Relation.Tags["type"].ToString()         != "route" &&
                                                CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
-                                                  ? GeoFeature.GeoType.Polygon
-                                                  : GeoFeature.GeoType.LineString;
+                                                  ? GeoJSONObjectType.Polygon
+                                                  : GeoJSONObjectType.LineString;
 
                     ResultList.Add(CurrentGeoFeature);
 
@@ -559,7 +560,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             if (ResultList.Count == 1)
             {
                 var ring = new LineString(CurrentGeoFeature.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude)));
-                if (ResultList.First().Type == GeoFeature.GeoType.Polygon)
+                if (ResultList.First().Type == GeoJSONObjectType.Polygon)
                 {
                     geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
                 }                  
@@ -572,7 +573,7 @@ namespace org.GraphDefined.OpenDataAPI.OverpassAPI
             {
                 var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude))));
 
-                if (ResultList.First().Type == GeoFeature.GeoType.Polygon)
+                if (ResultList.First().Type == GeoJSONObjectType.Polygon)
                 {
                     geometry = new Polygon(multiRing);
                 }
